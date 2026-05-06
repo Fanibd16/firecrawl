@@ -45,7 +45,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api ./apps/api
 
 # Copy any shared packages your workspace references
-COPY packages ./packages
+# COPY packages ./packages
 
 # Install dependencies
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
