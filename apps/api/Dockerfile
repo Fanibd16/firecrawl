@@ -39,10 +39,20 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
 # COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 # COPY . .
 # Copy workspace manifest files from repo root first
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+WORKDIR /app
 
+COPY apps/api/package.json ./
+COPY apps/api/pnpm-lock.yaml ./
+COPY apps/api/pnpm-workspace.yaml ./
+
+RUN pnpm install --frozen-lockfile
 # Copy the api app source
-COPY apps/api ./apps/api
+
+
+COPY apps/api ./
+
+RUN pnpm run build
+RUN pnpm prune --prod --ignore-scripts
 
 # Copy any shared packages your workspace references
 # COPY packages ./packages
