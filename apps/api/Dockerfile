@@ -36,8 +36,16 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
     && chmod -R a+w $RUSTUP_HOME $CARGO_HOME
 
 # Copy source files
+# COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+# COPY . .
+# Copy workspace manifest files from repo root first
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY . .
+
+# Copy the api app source
+COPY apps/api ./apps/api
+
+# Copy any shared packages your workspace references
+COPY packages ./packages
 
 # Install dependencies
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
