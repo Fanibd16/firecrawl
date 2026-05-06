@@ -19,7 +19,6 @@ RUN cd sharedLibs/go-html-to-md && \
 FROM base AS build
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
@@ -27,35 +26,30 @@ RUN apt-get update && apt-get install -y \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Rust
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH
-
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path \
     && chmod -R a+w $RUSTUP_HOME $CARGO_HOME
 
-# Copy source files
-# COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-# COPY . .
-# Copy workspace manifest files from repo root first
+COPY . .
+
+# ✅ Verify package.json exists before attempting install
+RUN test -f package.json || (echo "ERROR: package.json missing. Build context must be the monorepo root." && exit 1)
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/native/target \
+    pnpm install --frozen-lockfile
+
+
 WORKDIR /app
-
-COPY apps/api/package.json ./
-COPY apps/api/pnpm-lock.yaml ./
-COPY apps/api/pnpm-workspace.yaml ./
-
-RUN pnpm install --frozen-lockfile
+# Copy workspace manifest files from repo root first
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 # Copy the api app source
+COPY apps/api ./apps/api
 
 
-COPY apps/api ./
-
-RUN pnpm run build
-RUN pnpm prune --prod --ignore-scripts
-
-# Copy any shared packages your workspace references
-# COPY packages ./packages
 
 # Install dependencies
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
